@@ -220,6 +220,15 @@ function renderDashboard({ signals, trending }) {
   renderTrending(stockList);
 }
 
+function factorBar(name, val, max, colorCls) {
+  const pct = max > 0 ? Math.min((val / max) * 100, 100).toFixed(1) : 0;
+  return `<div class="factor-row">
+    <span class="factor-name">${name}</span>
+    <div class="factor-track"><div class="factor-fill ${colorCls}" style="width:${pct}%"></div></div>
+    <span class="factor-val">${val}/${max}</span>
+  </div>`;
+}
+
 function renderSignals(signals) {
   const container = $('signals-container');
   if (!signals.length) {
@@ -227,25 +236,29 @@ function renderSignals(signals) {
     return;
   }
 
-  container.innerHTML = signals.map(s => {
+  container.innerHTML = signals.map((s, i) => {
     const cls = scoreClass(s.score);
     const bd  = s.breakdown;
-    const bars = [
-      { w: bd.redditMentionSurge / 25, cls: '' },
-      { w: bd.stockTwitsBullish  / 20, cls: 'blue' },
-      { w: bd.newsSentiment      / 20, cls: '' },
-      { w: bd.earningsBeat       / 20, cls: '' },
-      { w: bd.upcomingEarnings   / 15, cls: '' },
-    ].map(b => `<div class="mini-bar ${b.cls}" style="width:${Math.max(1, b.w*100)}%"></div>`).join('');
-
-    return `<div class="signal-card ${cls}" data-ticker="${sanitize(s.ticker)}">
+    return `<div class="signal-card ${cls}" data-ticker="${sanitize(s.ticker)}" style="animation-delay:${i * 40}ms">
       <div class="signal-left">
         <span class="ticker">${sanitize(s.ticker)}</span>
-        <span class="score-badge ${cls}">${s.score}</span>
+        <span class="market-tag us">US</span>
+      </div>
+      <div class="signal-mid">
+        <div class="signal-label-row">
+          <span class="signal-label ${cls}">${sanitize(s.label)}</span>
+        </div>
+        <div class="factor-bars">
+          ${factorBar('Reddit',     bd.redditMentionSurge, 25, 'green')}
+          ${factorBar('StockTwits', bd.stockTwitsBullish,  20, 'blue')}
+          ${factorBar('News',       bd.newsSentiment,      20, 'amber')}
+          ${factorBar('Earnings',   bd.earningsBeat,       20, 'green')}
+          ${factorBar('Upcoming',   bd.upcomingEarnings,   15, 'purple')}
+        </div>
       </div>
       <div class="signal-right">
-        <span class="signal-label ${cls}">${sanitize(s.label)}</span>
-        <div class="mini-breakdown">${bars}</div>
+        <span class="big-score ${cls}">${s.score}</span>
+        <span class="score-of">/100</span>
       </div>
     </div>`;
   }).join('');
@@ -261,7 +274,7 @@ function renderTrending(stocks) {
     container.innerHTML = '<div class="empty-state">No trending data available</div>';
     return;
   }
-  container.innerHTML = stocks.map(s => {
+  container.innerHTML = stocks.map((s, i) => {
     const delta = s.mentionsDelta24h;
     const deltaEl = delta
       ? `<span class="delta ${delta.startsWith('+') ? 'green' : 'red'}">${sanitize(delta)}</span>`
@@ -270,15 +283,17 @@ function renderTrending(stocks) {
     let sentimentEl = '';
     if (st) {
       const cls = st.sentimentLabel === 'Bullish' ? 'bull' : st.sentimentLabel === 'Bearish' ? 'bear' : 'neu';
-      sentimentEl = `<span class="sentiment-pill ${cls}">${sanitize(st.sentimentLabel)}</span>`;
+      const short = st.sentimentLabel === 'Bullish' ? '🐂' : st.sentimentLabel === 'Bearish' ? '🐻' : '—';
+      sentimentEl = `<span class="sentiment-pill ${cls}" title="${sanitize(st.sentimentLabel)}">${short} ${sanitize(st.sentimentLabel)}</span>`;
     }
-    return `<div class="trending-item" data-ticker="${sanitize(s.ticker)}">
-      <span class="trend-rank">#${s.rank}</span>
+    const isTop = s.rank <= 3;
+    return `<div class="trending-item" data-ticker="${sanitize(s.ticker)}" style="animation-delay:${i * 30}ms">
+      <div class="trend-rank-bubble ${isTop ? 'top3' : ''}">${s.rank}</div>
       <div class="trend-info">
-        <span class="ticker">${sanitize(s.ticker)}</span>
+        <span class="ticker-sm">${sanitize(s.ticker)}</span>
         ${s.name ? `<span class="trend-name">${sanitize(s.name)}</span>` : ''}
       </div>
-      <div class="trend-stats">
+      <div class="trend-right">
         <span class="mention-count">${Number(s.mentions).toLocaleString()} mentions</span>
         ${deltaEl}
       </div>
@@ -410,10 +425,16 @@ function renderDetailCard(data) {
       </div>`
     : '';
 
+  const mkt = data.market ?? 'US';
+  const mktCls = mkt === 'UK' ? 'uk' : mkt === 'US' ? 'us' : 'other';
+
   $('search-result-container').innerHTML = `<div class="detail-card">
     <div class="detail-header">
-      <div class="detail-ticker-row">
-        <span class="detail-ticker">${sanitize(ticker)}</span>
+      <div class="detail-ticker-block">
+        <div class="detail-ticker-line">
+          <span class="detail-ticker">${sanitize(ticker)}</span>
+          <span class="market-tag ${mktCls}">${sanitize(mkt)}</span>
+        </div>
         ${profile?.name ? `<span class="detail-name">${sanitize(profile.name)}</span>` : ''}
         ${profile?.exchange ? `<span class="detail-exchange">${sanitize(profile.exchange)}</span>` : ''}
       </div>
@@ -537,15 +558,16 @@ function renderWatchlistCards(stocks) {
     const score = signal?.score ?? '—';
     const bd = signal?.breakdown;
 
-    const bars = bd
-      ? [
-          { w: bd.redditMentionSurge / 25 },
-          { w: bd.stockTwitsBullish  / 20 },
-          { w: bd.newsSentiment      / 20 },
-          { w: bd.earningsBeat       / 20 },
-          { w: bd.upcomingEarnings   / 15 },
-        ].map(b => `<div class="wl-score-bar" style="width:${Math.max(2, b.w*100)}%;background:${b.w > 0.5 ? 'var(--green)' : 'var(--text-muted)'}"></div>`).join('')
-      : '';
+    const barDefs = bd ? [
+      { w: bd.redditMentionSurge / 25, c: 'green' },
+      { w: bd.stockTwitsBullish  / 20, c: 'blue' },
+      { w: bd.newsSentiment      / 20, c: 'amber' },
+      { w: bd.earningsBeat       / 20, c: 'green' },
+      { w: bd.upcomingEarnings   / 15, c: 'amber' },
+    ] : [];
+    const bars = barDefs.map(b =>
+      `<div class="wl-bar ${b.w > 0 ? `filled ${b.c}` : ''}"></div>`
+    ).join('');
 
     const chg = quote?.change ?? null;
     const chgCls = chg == null ? 'neu' : chg >= 0 ? 'pos' : 'neg';
@@ -557,7 +579,7 @@ function renderWatchlistCards(stocks) {
       </div>
       <div class="wl-mid">
         <span class="wl-label ${cls}">${signal ? sanitize(signal.label) : 'N/A'}</span>
-        <div class="wl-score-breakdown">${bars}</div>
+        <div class="wl-bars">${bars}</div>
       </div>
       <div class="wl-right">
         <span class="price-text">${fmtPrice(quote?.price)}</span>

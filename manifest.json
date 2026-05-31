@@ -6,7 +6,8 @@
   "description": "Real-time buy signals, Reddit sentiment, and earnings data for US, UK, Indian and European stocks — all in one click.",
   "permissions": [
     "storage",
-    "alarms"
+    "alarms",
+    "tabs"
   ],
   "host_permissions": [
     "http://*/*",
