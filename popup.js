@@ -4,8 +4,7 @@
 // ═══════════════════════════════════════════════════
 // Constants & Defaults
 // ═══════════════════════════════════════════════════
-const DEFAULT_API    = 'http://168.231.79.163:3003/api/v1';
-const DEFAULT_APIKEY = 'sm_11c3d6ea14ca9b4189e02d5fe96b52ad472435e97a5d2c9d';
+const DEFAULT_API = 'http://168.231.79.163:3003/api/v1';
 const CACHE_TTL_MS   = 5 * 60 * 1000; // 5 minutes
 const MAX_WATCHLIST  = 20;
 const MAX_HISTORY    = 8;
@@ -26,7 +25,6 @@ function storageSet(data) {
 const state = {
   tab: 'dashboard',
   apiBase: DEFAULT_API,
-  apiKey: DEFAULT_APIKEY,
   autoRefresh: true,
   minScore: 0,
   watchlist: [],
@@ -41,9 +39,7 @@ const state = {
 // API helpers
 // ═══════════════════════════════════════════════════
 async function api(path) {
-  const headers = {};
-  if (state.apiKey) headers['x-api-key'] = state.apiKey;
-  const res = await fetch(`${state.apiBase}${path}`, { headers });
+  const res = await fetch(`${state.apiBase}${path}`);
   if (!res.ok) {
     const txt = await res.text().catch(() => '');
     throw new Error(`${res.status}: ${txt || res.statusText}`);
@@ -626,7 +622,6 @@ function initSettings() {
 
 function openSettings() {
   $('setting-api-url').value         = state.apiBase;
-  $('setting-api-key').value         = state.apiKey;
   $('setting-auto-refresh').checked  = state.autoRefresh;
   $('setting-min-score').value       = state.minScore;
   $('setting-min-score-val').textContent = state.minScore;
@@ -638,16 +633,14 @@ function closeSettings() {
 
 async function saveSettings() {
   const apiBase     = $('setting-api-url').value.trim().replace(/\/+$/, '');
-  const apiKey      = $('setting-api-key').value.trim();
   const autoRefresh = $('setting-auto-refresh').checked;
   const minScore    = parseInt($('setting-min-score').value, 10);
 
   state.apiBase     = apiBase || DEFAULT_API;
-  state.apiKey      = apiKey || DEFAULT_APIKEY;
   state.autoRefresh = autoRefresh;
   state.minScore    = minScore;
 
-  await storageSet({ apiBase: state.apiBase, apiKey: state.apiKey, autoRefresh, minScore });
+  await storageSet({ apiBase: state.apiBase, autoRefresh, minScore });
   closeSettings();
   toast('Settings saved', 'success');
   // Reset cache so next load uses new settings
@@ -688,7 +681,6 @@ async function init() {
   // Load persisted prefs / data
   const saved = await storageGet({
     apiBase: DEFAULT_API,
-    apiKey: DEFAULT_APIKEY,
     autoRefresh: true,
     minScore: 0,
     watchlist: [],

@@ -73,7 +73,7 @@
         <div class="search-row">
           <div class="search-input-wrap">
             <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-            <input id="search-input" type="text" placeholder="Enter ticker… NVDA, AAPL, TSLA" autocomplete="off" spellcheck="false" maxlength="10">
+            <input id="search-input" type="text" placeholder="US or UK ticker… NVDA, AAPL, TSCO, BP" autocomplete="off" spellcheck="false" maxlength="10">
           </div>
           <button id="search-btn" class="search-submit-btn">Go</button>
         </div>
@@ -107,11 +107,6 @@
           <label class="setting-label">API Base URL</label>
           <input id="setting-api-url" type="text" class="setting-input" placeholder="http://your-vps:3003/api/v1">
           <p class="setting-hint">The base URL of your StockMonk API server</p>
-        </div>
-        <div class="setting-group">
-          <label class="setting-label">API Key</label>
-          <input id="setting-api-key" type="password" class="setting-input" placeholder="sm_xxxxxxxxxxxxx">
-          <p class="setting-hint">Required for all /api/v1/* endpoints (x-api-key header)</p>
         </div>
         <div class="setting-group">
           <label class="setting-label">Auto-Refresh Dashboard</label>

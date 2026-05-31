@@ -5,9 +5,9 @@ A dark-theme fintech Chrome extension for [StockMonk API](https://github.com/dev
 **Features:**
 - 🔥 Buy Signals dashboard — top stocks ranked by composite score
 - 📈 Reddit trending — real-time mention counts + StockTwits sentiment
-- 🔍 Stock detail search — price, signal gauge, news, earnings countdown
+- 🔍 Stock detail search — US & UK tickers (NVDA, TSCO, BP, AZN, HSBA…)
 - ⭐ Persistent Watchlist — saved in your browser, bulk-refreshed on demand
-- ⚙ Settings — API URL, API key, min score filter, auto-refresh toggle
+- ⚙ Settings — API URL, min score filter, auto-refresh toggle
 
 ## Install (unpacked)
 
@@ -23,8 +23,8 @@ All preferences are saved in `chrome.storage.local` (persists across sessions):
 | Setting | Default | Description |
 |---------|---------|-------------|
 | API Base URL | `http://168.231.79.163:3003/api/v1` | Your StockMonk API server |
-| API Key | *(bundled)* | `x-api-key` header — works out of the box, override via Settings |
+| UK Stocks | — | Pass TSCO, BP, AZN, SHEL, HSBA, VOD etc. — `.L` suffix optional |
 | Auto-Refresh | On | Invalidates dashboard cache every 5 minutes |
 | Min Signal Score | 0 | Filter signals below this score on the Dashboard |
 
-> **Note:** The extension ships with a default API key so it works immediately. You can rotate or override it anytime via the Settings panel.
+> The API is open — no key required. Just load the extension and start using it.
