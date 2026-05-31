@@ -5,7 +5,7 @@
 // Constants & Defaults
 // ═══════════════════════════════════════════════════
 const DEFAULT_API    = 'http://168.231.79.163:3003/api/v1';
-const DEFAULT_APIKEY = ''; // Set your API key in Settings (gear icon)
+const DEFAULT_APIKEY = 'sm_11c3d6ea14ca9b4189e02d5fe96b52ad472435e97a5d2c9d';
 const CACHE_TTL_MS   = 5 * 60 * 1000; // 5 minutes
 const MAX_WATCHLIST  = 20;
 const MAX_HISTORY    = 8;
