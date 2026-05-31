@@ -207,8 +207,17 @@ async function loadDashboard(force = false) {
 }
 
 function renderDashboard({ signals, trending }) {
-  renderSignals(signals?.signals ?? []);
-  renderTrending(trending?.stocks ?? []);
+  const signalList = signals?.signals ?? [];
+  const stockList  = trending?.stocks  ?? [];
+
+  // If cache has no data at all, it's probably stale from a failed session — force refresh
+  if (!signalList.length && !stockList.length) {
+    loadDashboard(true);
+    return;
+  }
+
+  renderSignals(signalList);
+  renderTrending(stockList);
 }
 
 function renderSignals(signals) {
@@ -704,6 +713,10 @@ async function init() {
   initSettings();
   updateWatchlistBadge();
   setupAutoRefresh();
+
+  // Show loading state immediately so screen is never blank
+  setInner('signals-container',  loadingHTML('Loading signals…'));
+  setInner('trending-container', loadingHTML('Loading trending…'));
 
   // Restore cached dashboard or load fresh
   if (state.dashboardCache) {

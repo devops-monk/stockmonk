@@ -29,12 +29,13 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html, body { height: 100%; }
+
 html { font-size: 14px; }
 
 body {
   width: 400px;
-  min-height: 520px;
-  max-height: 620px;
+  height: 600px;        /* fixed height so flex children can resolve percentages */
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
@@ -46,7 +47,8 @@ body {
 #app {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;        /* allows flex child to shrink below content height */
   overflow: hidden;
 }
 
