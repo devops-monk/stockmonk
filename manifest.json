@@ -10,8 +10,7 @@
     "tabs"
   ],
   "host_permissions": [
-    "http://*/*",
-    "https://*/*"
+    "http://168.231.79.163:3003/*"
   ],
   "background": {
     "service_worker": "background.js"
