@@ -1,0 +1,79 @@
+name: Release Extension
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'   # triggers on v1.0.0, v1.2.3 etc.
+
+permissions:
+  contents: write  # needed to create GitHub Releases
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Extract version from tag ─────────────────────────────────────────
+      - name: Extract version
+        id: version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}      # e.g. v1.2.3
+          VERSION=${TAG#v}                   # e.g. 1.2.3
+          echo "tag=$TAG"       >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # ── 3. Stamp version into manifest.json ─────────────────────────────────
+      # This ensures the packaged zip always matches the git tag version.
+      - name: Update manifest version
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" manifest.json
+          echo "manifest.json version → $VERSION"
+          grep '"version"' manifest.json
+
+      # ── 4. Build zip (only the files the extension needs) ──��────────────���───
+      - name: Build extension zip
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          ZIP_NAME="stockmonk-extension-v${VERSION}.zip"
+
+          zip -r "$ZIP_NAME" \
+            manifest.json \
+            popup.html \
+            popup.js \
+            popup.css \
+            background.js \
+            icons/
+
+          echo "zip_name=$ZIP_NAME" >> $GITHUB_ENV
+          echo "Built: $ZIP_NAME ($(du -sh $ZIP_NAME | cut -f1))"
+          unzip -l "$ZIP_NAME"
+
+      # ── 5. Create GitHub Release and attach zip ──────────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "StockMonk ${{ steps.version.outputs.tag }}"
+          body: |
+            ## StockMonk Chrome Extension ${{ steps.version.outputs.tag }}
+
+            ### Install
+            1. Download `stockmonk-extension-v${{ steps.version.outputs.version }}.zip` below
+            2. Unzip it
+            3. Open Chrome → `chrome://extensions`
+            4. Enable **Developer mode** (top right)
+            5. Click **Load unpacked** → select the unzipped folder
+
+            ### Markets Covered
+            🇺🇸 US (NYSE/NASDAQ) · 🇬🇧 UK (LSE) · 🇮🇳 India (NSE) · 🇩🇪 Germany · 🇫🇷 France · 🇳🇱 Netherlands · 🇪🇸 Spain · 🇮🇹 Italy · 🇨🇭 Switzerland · OTC
+
+            ### What's New
+            See [CHANGELOG](https://github.com/${{ github.repository }}/commits/main) for details.
+          files: ${{ env.zip_name }}
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.tag, '-') }}
