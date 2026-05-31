@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════
 // Constants & Defaults
 // ═══════════════════════════════════════════════════
-const DEFAULT_API = 'http://168.231.79.163:3003/api/v1';
+const DEFAULT_API = 'https://stockmonk.devops-monk.com/api/v1';
 const CACHE_TTL_MS   = 5 * 60 * 1000; // 5 minutes
 const MAX_WATCHLIST  = 20;
 const MAX_HISTORY    = 8;

@@ -10,7 +10,7 @@
     "tabs"
   ],
   "host_permissions": [
-    "http://168.231.79.163:3003/*"
+    "https://stockmonk.devops-monk.com/*"
   ],
   "background": {
     "service_worker": "background.js"
