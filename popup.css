@@ -762,7 +762,10 @@ input[type="text"]:focus {
   background: var(--bg-card2);
   border: 1px solid var(--border-lit);
   border-radius: 14px;
-  width: 330px;
+  width: 360px;
+  max-height: 560px;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 8px 40px rgba(0,0,0,.6);
   overflow: hidden;
   animation: fadeUp .2s ease;
@@ -776,7 +779,7 @@ input[type="text"]:focus {
 }
 .modal-title { font-size: 14px; font-weight: 800; color: var(--text); }
 
-.modal-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+.modal-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; }
 
 /* ─── Help modal body ─── */
 .help-body { gap: 12px; }
