@@ -77,15 +77,39 @@ function scoreColor(score) {
   return '#ef4444';
 }
 
-function fmtPrice(p) {
-  if (p == null) return '—';
-  return '$' + Number(p).toFixed(2);
+const CURRENCY_SYMBOLS = { USD:'$', GBP:'£', GBp:'p', EUR:'€', INR:'₹', JPY:'¥', CHF:'Fr', HKD:'HK$', CAD:'C$', AUD:'A$' };
+
+function currencySymbol(code) {
+  return CURRENCY_SYMBOLS[code] ?? (code ? code + ' ' : '$');
 }
-function fmtChange(change, pct) {
+
+function fmtPrice(p, currency) {
+  if (p == null) return '—';
+  const sym = currencySymbol(currency);
+  const decimals = (currency === 'GBp' || currency === 'JPY') ? 0 : 2;
+  return sym + Number(p).toFixed(decimals);
+}
+
+function fmtChange(change, pct, currency) {
   if (change == null) return '';
   const sign = change >= 0 ? '+' : '';
-  const pc   = pct != null ? ` (${sign}${Number(pct).toFixed(2)}%)` : '';
-  return `${sign}${Number(change).toFixed(2)}${pc}`;
+  const sym  = currencySymbol(currency);
+  const decimals = (currency === 'GBp' || currency === 'JPY') ? 0 : 2;
+  const pc = pct != null ? ` (${sign}${Number(pct).toFixed(2)}%)` : '';
+  return `${sign}${sym}${Math.abs(Number(change)).toFixed(decimals)}${pc}`;
+}
+
+function fmtReportTime(raw) {
+  if (!raw) return '';
+  if (raw === 'before_market' || raw === 'BMO') return 'Pre-market';
+  if (raw === 'after_market'  || raw === 'AMC') return 'After hours';
+  return '';
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 function timeAgo(isoStr) {
   const diff = Date.now() - new Date(isoStr).getTime();
@@ -143,6 +167,87 @@ function buildGaugeSVG(score) {
 }
 
 // ═══════════════════════════════════════════════════
+// Earnings Tab
+// ═══════════════════════════════════════════════════
+let earningsRange = 'upcoming';
+
+async function loadEarnings(range = earningsRange) {
+  earningsRange = range;
+  const container = $('earnings-container');
+  container.innerHTML = loadingHTML('Loading earnings…');
+
+  // Update toggle button state
+  document.querySelectorAll('.etoggle-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.range === range);
+  });
+
+  try {
+    const endpoint = range === 'upcoming'
+      ? '/earnings/upcoming?days=14'
+      : '/earnings/recent?days=7';
+    const data = await api(endpoint);
+    renderEarningsList(data.earnings ?? [], range);
+  } catch (err) {
+    container.innerHTML = errorHTML(`Failed to load earnings: ${err.message}`);
+  }
+}
+
+function renderEarningsList(earnings, range) {
+  const container = $('earnings-container');
+  if (!earnings.length) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">${range === 'upcoming' ? '📭' : '📋'}</div>
+      <div class="empty-title">No earnings ${range === 'upcoming' ? 'scheduled' : 'reported'}</div>
+      <div class="empty-sub">Check back later or widen the date range.</div>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = earnings.map((e, i) => {
+    const isUpcoming = !e.epsActual;
+    const beatCls = e.beatMiss === 'beat' ? 'beat' : e.beatMiss === 'miss' ? 'miss' : '';
+    const beatLabel = e.beatMiss === 'beat' ? '✓ Beat' : e.beatMiss === 'miss' ? '✗ Miss' : e.beatMiss === 'inline' ? '= Inline' : '';
+    const timeLabel = fmtReportTime(e.reportTime);
+    const urgency = isUpcoming && e.daysUntil <= 2 ? 'urgent' : isUpcoming && e.daysUntil <= 5 ? 'soon' : '';
+
+    const epsHtml = isUpcoming
+      ? (e.epsEstimate != null ? `<span class="eps-est">Est. <strong>${Number(e.epsEstimate).toFixed(2)}</strong></span>` : '')
+      : `<span class="eps-actual ${beatCls}">EPS ${Number(e.epsActual).toFixed(2)}</span>
+         ${e.epsEstimate != null ? `<span class="eps-vs">vs ${Number(e.epsEstimate).toFixed(2)}</span>` : ''}`;
+
+    return `<div class="earnings-row ${urgency}" data-ticker="${sanitize(e.ticker)}" style="animation-delay:${i * 25}ms">
+      <div class="er-left">
+        <span class="er-ticker">${sanitize(e.ticker)}</span>
+        ${beatLabel ? `<span class="er-beat ${beatCls}">${beatLabel}</span>` : ''}
+      </div>
+      <div class="er-mid">
+        <span class="er-date">${fmtDate(e.reportDate)}</span>
+        ${timeLabel ? `<span class="er-time">${timeLabel}</span>` : ''}
+        ${epsHtml}
+      </div>
+      <div class="er-right">
+        ${isUpcoming
+          ? `<span class="er-days ${urgency}">${e.daysUntil}d</span>`
+          : (e.epsSurprisePct != null
+              ? `<span class="er-surprise ${e.epsSurprisePct >= 0 ? 'pos' : 'neg'}">${e.epsSurprisePct >= 0 ? '+' : ''}${Number(e.epsSurprisePct).toFixed(1)}%</span>`
+              : '')
+        }
+      </div>
+    </div>`;
+  }).join('');
+
+  container.querySelectorAll('.earnings-row').forEach(row => {
+    row.addEventListener('click', () => goToSearch(row.dataset.ticker));
+  });
+}
+
+function initEarningsTab() {
+  document.querySelectorAll('.etoggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => loadEarnings(btn.dataset.range));
+  });
+}
+
+// ═══════════════════════════════════════════════════
 // Signal breakdown rows
 // ═══════════════════════════════════════════════════
 function breakdownRow(label, val, max) {
@@ -166,6 +271,7 @@ function switchTab(tab) {
     p.classList.toggle('hidden', p.id !== `tab-${tab}`);
   });
   if (tab === 'watchlist') loadWatchlist();
+  if (tab === 'earnings')  loadEarnings();
 }
 
 // ═══════════════════════════════════════════════════
@@ -232,7 +338,11 @@ function factorBar(name, val, max, colorCls) {
 function renderSignals(signals) {
   const container = $('signals-container');
   if (!signals.length) {
-    container.innerHTML = '<div class="empty-state">No signals found — try lowering the min score in Settings</div>';
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📡</div>
+      <div class="empty-title">Signals calibrating</div>
+      <div class="empty-sub">Building 7-day baseline data — scores will sharpen over the next few hours. Try lowering Min Score in ⚙ Settings.</div>
+    </div>`;
     return;
   }
 
@@ -242,12 +352,9 @@ function renderSignals(signals) {
     return `<div class="signal-card ${cls}" data-ticker="${sanitize(s.ticker)}" style="animation-delay:${i * 40}ms">
       <div class="signal-left">
         <span class="ticker">${sanitize(s.ticker)}</span>
-        <span class="market-tag us">US</span>
+        <span class="signal-label ${cls}">${sanitize(s.label)}</span>
       </div>
       <div class="signal-mid">
-        <div class="signal-label-row">
-          <span class="signal-label ${cls}">${sanitize(s.label)}</span>
-        </div>
         <div class="factor-bars">
           ${factorBar('Reddit',     bd.redditMentionSurge, 25, 'green')}
           ${factorBar('StockTwits', bd.stockTwitsBullish,  20, 'blue')}
@@ -290,14 +397,17 @@ function renderTrending(stocks) {
     return `<div class="trending-item" data-ticker="${sanitize(s.ticker)}" style="animation-delay:${i * 30}ms">
       <div class="trend-rank-bubble ${isTop ? 'top3' : ''}">${s.rank}</div>
       <div class="trend-info">
-        <span class="ticker-sm">${sanitize(s.ticker)}</span>
+        <div class="trend-ticker-row">
+          <span class="ticker-sm">${sanitize(s.ticker)}</span>
+          ${sentimentEl}
+        </div>
         ${s.name ? `<span class="trend-name">${sanitize(s.name)}</span>` : ''}
       </div>
       <div class="trend-right">
-        <span class="mention-count">${Number(s.mentions).toLocaleString()} mentions</span>
+        <span class="mention-count">${Number(s.mentions).toLocaleString()}</span>
+        <span class="mention-label">mentions</span>
         ${deltaEl}
       </div>
-      ${sentimentEl}
     </div>`;
   }).join('');
 
@@ -370,42 +480,66 @@ function renderDetailCard(data) {
   const { ticker, quote, profile, nextEarnings, newsSentiment, signal } = data;
   const inWL = state.watchlist.includes(ticker);
 
+  const cur  = quote?.currency ?? 'USD';
+  const mkt  = data.market ?? 'US';
+  const mktCls = { US:'us', UK:'uk', IN:'in', DE:'de', FR:'fr', NL:'nl', ES:'es', IT:'it', CH:'ch' }[mkt] ?? 'other';
+  const mktFlag = { US:'🇺🇸', UK:'🇬🇧', IN:'🇮🇳', DE:'🇩🇪', FR:'🇫🇷', NL:'🇳🇱', ES:'🇪🇸', IT:'🇮🇹', CH:'🇨🇭' }[mkt] ?? '';
+
   const priceHtml = quote
     ? (() => {
         const chg = Number(quote.change ?? 0);
         const cls = chg >= 0 ? 'pos' : 'neg';
+        const arrow = chg >= 0 ? '▲' : '▼';
         return `<div class="detail-price-row">
-          <span class="detail-price">${fmtPrice(quote.price)}</span>
-          <span class="detail-change ${cls}">${fmtChange(quote.change, quote.changePercent)}</span>
+          <span class="detail-price">${fmtPrice(quote.price, cur)}</span>
+          <span class="detail-change ${cls}">${arrow} ${fmtChange(quote.change, quote.changePercent, cur)}</span>
         </div>
         <div class="detail-price-sub">
-          <div class="price-meta-item"><span class="price-meta-label">Open</span><span class="price-meta-val">${fmtPrice(quote.open)}</span></div>
-          <div class="price-meta-item"><span class="price-meta-label">High</span><span class="price-meta-val">${fmtPrice(quote.high)}</span></div>
-          <div class="price-meta-item"><span class="price-meta-label">Low</span><span class="price-meta-val">${fmtPrice(quote.low)}</span></div>
-          <div class="price-meta-item"><span class="price-meta-label">Prev Close</span><span class="price-meta-val">${fmtPrice(quote.prevClose)}</span></div>
-        </div>`;
+          <div class="price-meta-item"><span class="price-meta-label">Open</span><span class="price-meta-val">${fmtPrice(quote.open, cur)}</span></div>
+          <div class="price-meta-item"><span class="price-meta-label">High</span><span class="price-meta-val">${fmtPrice(quote.high, cur)}</span></div>
+          <div class="price-meta-item"><span class="price-meta-label">Low</span><span class="price-meta-val">${fmtPrice(quote.low, cur)}</span></div>
+          <div class="price-meta-item"><span class="price-meta-label">Prev</span><span class="price-meta-val">${fmtPrice(quote.prevClose, cur)}</span></div>
+        </div>
+        ${quote.marketState && quote.marketState !== 'REGULAR'
+          ? `<div class="market-state-pill">${quote.marketState === 'CLOSED' ? '🔴 Market Closed' : quote.marketState === 'PRE' ? '🟡 Pre-Market' : '🟡 After Hours'}</div>`
+          : ''}`;
       })()
-    : '<div class="detail-price-row"><span class="detail-price" style="color:var(--text-muted)">Price N/A</span></div>';
+    : '<div class="detail-price-row"><span class="detail-price muted">Price unavailable</span></div>';
 
   const earningsHtml = nextEarnings
-    ? `<div class="detail-earnings">
-        <span class="earnings-icon">📅</span>
-        <span class="earnings-text">Next earnings: ${sanitize(nextEarnings.reportDate)} <span style="color:var(--text-muted)">(${sanitize(nextEarnings.reportTime?.toUpperCase() ?? '?')})</span></span>
-        <span class="earnings-countdown">${nextEarnings.daysUntil}d away</span>
-      </div>`
+    ? (() => {
+        const time = fmtReportTime(nextEarnings.reportTime);
+        const urgency = nextEarnings.daysUntil <= 3 ? 'urgent' : nextEarnings.daysUntil <= 7 ? 'soon' : '';
+        return `<div class="detail-earnings ${urgency}">
+          <div class="earnings-left">
+            <span class="earnings-label">Next Earnings</span>
+            <span class="earnings-date">${fmtDate(nextEarnings.reportDate)}${time ? ` · ${time}` : ''}</span>
+          </div>
+          <span class="earnings-countdown ${urgency}">${nextEarnings.daysUntil}d</span>
+        </div>`;
+      })()
     : '';
 
+  const sentColor = newsSentiment?.score >= 60 ? 'var(--green)' : newsSentiment?.score <= 40 ? 'var(--red)' : 'var(--amber)';
   const newsHtml = (newsSentiment?.topArticles?.length)
     ? `<div class="detail-news">
-        <div class="news-title">Latest News · Sentiment: <span style="color:${newsSentiment.score >= 60 ? 'var(--green)' : newsSentiment.score <= 40 ? 'var(--red)' : 'var(--amber)'}">${sanitize(newsSentiment.label)}</span></div>
+        <div class="news-header">
+          <span class="news-title">Latest News</span>
+          <span class="news-sentiment-pill" style="color:${sentColor};border-color:${sentColor}20;background:${sentColor}10">${sanitize(newsSentiment.label)}</span>
+        </div>
         ${newsSentiment.topArticles.slice(0, 4).map(a => {
           const sentCls = a.sentiment === 'positive' ? 'positive' : a.sentiment === 'negative' ? 'negative' : 'neutral';
-          return `<div class="news-item" data-url="${sanitize(a.url || '')}">
-            <span class="news-headline">${sanitize(a.headline)}</span>
+          const sentDot = a.sentiment === 'positive' ? '●' : a.sentiment === 'negative' ? '●' : '●';
+          return `<div class="news-item ${a.url ? 'clickable' : ''}" data-url="${sanitize(a.url || '')}">
+            <div class="news-body">
+              <span class="news-dot ${sentCls}">${sentDot}</span>
+              <span class="news-headline">${sanitize(a.headline)}</span>
+            </div>
             <div class="news-meta">
               <span class="news-source">${sanitize(a.source)}</span>
-              <span class="news-time">· ${timeAgo(a.publishedAt)}</span>
-              <span class="news-sentiment ${sentCls}">${sentCls}</span>
+              <span class="news-sep">·</span>
+              <span class="news-time">${timeAgo(a.publishedAt)}</span>
+              ${a.url ? `<svg class="news-link-icon" viewBox="0 0 12 12" fill="none"><path d="M2 10L10 2M10 2H5M10 2V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>` : ''}
             </div>
           </div>`;
         }).join('')}
@@ -425,21 +559,22 @@ function renderDetailCard(data) {
       </div>`
     : '';
 
-  const mkt = data.market ?? 'US';
-  const mktCls = mkt === 'UK' ? 'uk' : mkt === 'US' ? 'us' : 'other';
-
   $('search-result-container').innerHTML = `<div class="detail-card">
     <div class="detail-header">
       <div class="detail-ticker-block">
         <div class="detail-ticker-line">
           <span class="detail-ticker">${sanitize(ticker)}</span>
-          <span class="market-tag ${mktCls}">${sanitize(mkt)}</span>
+          <span class="market-tag ${mktCls}">${mktFlag} ${sanitize(mkt)}</span>
         </div>
         ${profile?.name ? `<span class="detail-name">${sanitize(profile.name)}</span>` : ''}
-        ${profile?.exchange ? `<span class="detail-exchange">${sanitize(profile.exchange)}</span>` : ''}
+        <div class="detail-meta-row">
+          ${profile?.sector ? `<span class="detail-meta-chip">${sanitize(profile.sector)}</span>` : ''}
+          ${profile?.exchange ? `<span class="detail-meta-chip">${sanitize(profile.exchange)}</span>` : ''}
+          ${cur !== 'USD' ? `<span class="detail-meta-chip">${sanitize(cur)}</span>` : ''}
+        </div>
       </div>
       <button class="add-wl-btn ${inWL ? 'in-list' : ''}" id="toggle-wl-btn" data-ticker="${sanitize(ticker)}">
-        ${inWL ? '✓ Watching' : '+ Watchlist'}
+        ${inWL ? '✓ Watching' : '+ Watch'}
       </button>
     </div>
     ${priceHtml}
@@ -582,8 +717,8 @@ function renderWatchlistCards(stocks) {
         <div class="wl-bars">${bars}</div>
       </div>
       <div class="wl-right">
-        <span class="price-text">${fmtPrice(quote?.price)}</span>
-        <span class="change-text ${chgCls}">${chg != null ? fmtChange(chg, quote?.changePercent) : ''}</span>
+        <span class="price-text">${fmtPrice(quote?.price, quote?.currency)}</span>
+        <span class="change-text ${chgCls}">${chg != null ? fmtChange(chg, quote?.changePercent, quote?.currency) : ''}</span>
       </div>
       <button class="remove-btn" data-ticker="${sanitize(ticker)}" title="Remove">✕</button>
     </div>`;
@@ -732,6 +867,7 @@ async function init() {
   // Init components
   initSearch();
   initWatchlistInput();
+  initEarningsTab();
   initSettings();
   updateWatchlistBadge();
   setupAutoRefresh();
