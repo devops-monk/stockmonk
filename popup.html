@@ -20,9 +20,11 @@
     <div class="header-right">
       <span class="live-dot">LIVE</span>
       <span id="last-updated" class="last-updated"></span>
-      <button id="settings-btn" class="icon-btn" title="Settings">
+      <button id="help-btn" class="icon-btn" title="How to use">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3" stroke-linecap="round"/>
         </svg>
       </button>
     </div>
@@ -109,42 +111,60 @@
 
   </main>
 
-  <!-- ═══ SETTINGS MODAL ═══ -->
-  <div id="settings-overlay" class="modal-overlay hidden">
+  <!-- ═══ HELP MODAL ═══ -->
+  <div id="help-overlay" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <span class="modal-title">Settings</span>
-        <button id="settings-close" class="icon-btn">
+        <span class="modal-title">How to use StockMonk</span>
+        <button id="help-close" class="icon-btn">
           <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
         </button>
       </div>
-      <div class="modal-body">
-        <div class="setting-group">
-          <label class="setting-label">API Base URL</label>
-          <input id="setting-api-url" type="text" class="setting-input" placeholder="http://your-vps:3003/api/v1">
-          <p class="setting-hint">The base URL of your StockMonk API server</p>
-        </div>
-        <div class="setting-group">
-          <label class="setting-label">Auto-Refresh Dashboard</label>
-          <div class="toggle-row">
-            <label class="toggle">
-              <input id="setting-auto-refresh" type="checkbox">
-              <span class="toggle-slider"></span>
-            </label>
-            <span class="toggle-label">Refresh every 5 minutes</span>
+      <div class="modal-body help-body">
+
+        <div class="help-section">
+          <div class="help-tab-icon">📊</div>
+          <div>
+            <div class="help-tab-name">Dashboard</div>
+            <div class="help-tab-desc">Shows the top buy signals and most-talked-about stocks on Reddit right now. Click any card to see full details. Scores above 60 are <span class="h-green">Buy Watch</span>.</div>
           </div>
         </div>
-        <div class="setting-group">
-          <label class="setting-label">Min Signal Score (Dashboard)</label>
-          <div class="slider-row">
-            <input id="setting-min-score" type="range" min="0" max="80" step="5" value="0" class="score-slider">
-            <span id="setting-min-score-val" class="slider-val">0</span>
+
+        <div class="help-section">
+          <div class="help-tab-icon">🔍</div>
+          <div>
+            <div class="help-tab-name">Search</div>
+            <div class="help-tab-desc">Look up any stock by ticker. Works for US, UK, Indian, and European stocks — try <strong>NVDA</strong>, <strong>TSCO</strong>, <strong>RELIANCE</strong>, <strong>SAP</strong>, <strong>ASML</strong>.</div>
           </div>
         </div>
-        <div class="modal-actions">
-          <button id="settings-save" class="primary-btn">Save Settings</button>
-          <button id="settings-clear" class="danger-btn">Clear All Data</button>
+
+        <div class="help-section">
+          <div class="help-tab-icon">📅</div>
+          <div>
+            <div class="help-tab-name">Earnings</div>
+            <div class="help-tab-desc"><strong>Upcoming</strong> shows earnings in the next 14 days with EPS estimates. <strong>Recent</strong> shows who beat or missed last week. <span class="h-red">Red pill</span> = report in ≤2 days.</div>
+          </div>
         </div>
+
+        <div class="help-section">
+          <div class="help-tab-icon">⭐</div>
+          <div>
+            <div class="help-tab-name">Watchlist</div>
+            <div class="help-tab-desc">Add up to 20 tickers to track live prices and signals. Search a stock then tap <strong>+ Watch</strong> to add it. Tap a card to refresh details.</div>
+          </div>
+        </div>
+
+        <div class="help-score-key">
+          <div class="help-score-row"><span class="h-badge green">60–100</span><span>Buy Watch — strong combined signal</span></div>
+          <div class="help-score-row"><span class="h-badge amber">40–59</span><span>Neutral — monitor it</span></div>
+          <div class="help-score-row"><span class="h-badge red">0–39</span><span>Low Interest — low activity</span></div>
+        </div>
+
+        <a class="help-dashboard-link" href="https://share.devops-monk.com/" target="_blank">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/><path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/></svg>
+          Open full dashboard at share.devops-monk.com
+        </a>
+
       </div>
     </div>
   </div>

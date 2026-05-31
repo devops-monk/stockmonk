@@ -341,7 +341,7 @@ function renderSignals(signals) {
     container.innerHTML = `<div class="empty-state">
       <div class="empty-icon">📡</div>
       <div class="empty-title">Signals calibrating</div>
-      <div class="empty-sub">Building 7-day baseline data — scores will sharpen over the next few hours. Try lowering Min Score in ⚙ Settings.</div>
+      <div class="empty-sub">Building 7-day baseline data — scores will sharpen over the next few hours.</div>
     </div>`;
     return;
   }
@@ -767,69 +767,16 @@ function initWatchlistInput() {
   input.addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
 }
 
+
 // ═══════════════════════════════════════════════════
-// Settings
+// Help Modal
 // ═══════════════════════════════════════════════════
-function initSettings() {
-  $('settings-btn').addEventListener('click', openSettings);
-  $('settings-close').addEventListener('click', closeSettings);
-  $('settings-overlay').addEventListener('click', e => {
-    if (e.target === $('settings-overlay')) closeSettings();
+function initHelp() {
+  $('help-btn').addEventListener('click', () => $('help-overlay').classList.remove('hidden'));
+  $('help-close').addEventListener('click', () => $('help-overlay').classList.add('hidden'));
+  $('help-overlay').addEventListener('click', e => {
+    if (e.target === $('help-overlay')) $('help-overlay').classList.add('hidden');
   });
-
-  const slider = $('setting-min-score');
-  slider.addEventListener('input', () => {
-    $('setting-min-score-val').textContent = slider.value;
-  });
-
-  $('settings-save').addEventListener('click', saveSettings);
-  $('settings-clear').addEventListener('click', clearAllData);
-}
-
-function openSettings() {
-  $('setting-api-url').value         = state.apiBase;
-  $('setting-auto-refresh').checked  = state.autoRefresh;
-  $('setting-min-score').value       = state.minScore;
-  $('setting-min-score-val').textContent = state.minScore;
-  $('settings-overlay').classList.remove('hidden');
-}
-function closeSettings() {
-  $('settings-overlay').classList.add('hidden');
-}
-
-async function saveSettings() {
-  const apiBase     = $('setting-api-url').value.trim().replace(/\/+$/, '');
-  const autoRefresh = $('setting-auto-refresh').checked;
-  const minScore    = parseInt($('setting-min-score').value, 10);
-
-  state.apiBase     = apiBase || DEFAULT_API;
-  state.autoRefresh = autoRefresh;
-  state.minScore    = minScore;
-
-  await storageSet({ apiBase: state.apiBase, autoRefresh, minScore });
-  closeSettings();
-  toast('Settings saved', 'success');
-  // Reset cache so next load uses new settings
-  state.dashboardCache   = null;
-  state.dashboardCacheTs = 0;
-  if (state.tab === 'dashboard') loadDashboard(true);
-}
-
-async function clearAllData() {
-  if (!confirm('Clear all stored data including Watchlist and Search History?')) return;
-  await storageSet({
-    watchlist: [], searchHistory: [],
-    dashboardCache: null, dashboardCacheTs: 0,
-    watchlistCache: null, watchlistCacheTs: 0,
-  });
-  state.watchlist      = [];
-  state.searchHistory  = [];
-  state.dashboardCache = null;
-  state.watchlistCache = null;
-  updateWatchlistBadge();
-  closeSettings();
-  toast('All data cleared', 'info');
-  loadDashboard(true);
 }
 
 // ═══════════════════════════════════════════════════
@@ -868,7 +815,7 @@ async function init() {
   initSearch();
   initWatchlistInput();
   initEarningsTab();
-  initSettings();
+  initHelp();
   updateWatchlistBadge();
   setupAutoRefresh();
 
