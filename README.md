@@ -22,7 +22,7 @@ All preferences are saved in `chrome.storage.local` (persists across sessions):
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| API Base URL | `http://168.231.79.163:3003/api/v1` | Your StockMonk API server |
+| API Base URL | `https://stockmonk.devops-monk.com/api/v1` | Your StockMonk API server |
 | UK Stocks | — | Pass TSCO, BP, AZN, SHEL, HSBA, VOD etc. — `.L` suffix optional |
 | Auto-Refresh | On | Invalidates dashboard cache every 5 minutes |
 | Min Signal Score | 0 | Filter signals below this score on the Dashboard |
